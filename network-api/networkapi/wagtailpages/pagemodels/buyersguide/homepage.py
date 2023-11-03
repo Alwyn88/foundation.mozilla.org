@@ -24,21 +24,20 @@ from wagtail_localize.fields import SynchronizedField, TranslatableField
 
 from networkapi.utility import orderables
 from networkapi.wagtailpages.pagemodels.base import BasePage
-from networkapi.wagtailpages.pagemodels.buyersguide.utils import (
-    get_categories_for_locale,
-    sort_average,
-)
+from networkapi.wagtailpages.pagemodels.buyersguide.utils import sort_average
 from networkapi.wagtailpages.templatetags.localization import relocalize_url
 from networkapi.wagtailpages.utils import (
     get_default_locale,
     get_language_from_request,
     get_locale_from_request,
+    localize_queryset,
 )
 
 if TYPE_CHECKING:
     from networkapi.wagtailpages.models import (
         BuyersGuideArticlePage,
         BuyersGuideCampaignPage,
+        ConsumerCreepometerPage,
         Update,
     )
 
@@ -103,7 +102,11 @@ class BuyersGuidePage(RoutablePageMixin, BasePage):
                 HelpPanel(content="<h2>Main Featured Page</h2>"),
                 PageChooserPanel(
                     "hero_featured_page",
-                    page_type=["wagtailpages.BuyersGuideArticlePage", "wagtailpages.BuyersGuideCampaignPage"],
+                    page_type=[
+                        "wagtailpages.BuyersGuideArticlePage",
+                        "wagtailpages.BuyersGuideCampaignPage",
+                        "wagtailpages.ConsumerCreepometerPage",
+                    ],
                 ),
                 HelpPanel(content="<h2>Supporting Featured Pages</h2>"),
                 FieldPanel("hero_supporting_pages_heading", heading="Heading"),
@@ -379,7 +382,15 @@ class BuyersGuidePage(RoutablePageMixin, BasePage):
                 language_code=language_code,
             )
 
-        context["categories"] = get_categories_for_locale(language_code)
+        BuyersGuideProductCategory = apps.get_model(app_label="wagtailpages", model_name="BuyersGuideProductCategory")
+        category_cache_key = f"pni_home_categories_{language_code}"
+        categories = cache.get(category_cache_key)
+        if not categories:
+            categories = BuyersGuideProductCategory.objects.filter(hidden=False)
+            categories = localize_queryset(categories)
+            categories = cache.get_or_set(category_cache_key, categories, 24 * 60 * 60)  # Set cache for 24h
+
+        context["categories"] = categories
         context["current_category"] = None
         context["featured_cta"] = self.call_to_action
         context["products"] = products
@@ -395,7 +406,9 @@ class BuyersGuidePage(RoutablePageMixin, BasePage):
         indexes = BuyersGuideEditorialContentIndexPage.objects.descendant_of(self)
         return indexes.first()
 
-    def get_hero_featured_page(self) -> Optional[Union["BuyersGuideArticlePage", "BuyersGuideCampaignPage"]]:
+    def get_hero_featured_page(
+        self,
+    ) -> Optional[Union["BuyersGuideArticlePage", "BuyersGuideCampaignPage", "ConsumerCreepometerPage"]]:
         try:
             return self.hero_featured_page.specific.localized
         except AttributeError:
@@ -403,7 +416,9 @@ class BuyersGuidePage(RoutablePageMixin, BasePage):
             # attribute)
             return None
 
-    def get_hero_supporting_pages(self) -> list[Union["BuyersGuideArticlePage", "BuyersGuideCampaignPage"]]:
+    def get_hero_supporting_pages(
+        self,
+    ) -> list[Union["BuyersGuideArticlePage", "BuyersGuideCampaignPage", "ConsumerCreepometerPage"]]:
         supporting_pages = orderables.get_related_items(
             self.hero_supporting_page_relations.all(),
             "supporting_page",
@@ -461,7 +476,11 @@ class BuyersGuidePageHeroSupportingPageRelation(TranslatableMixin, Orderable):
     panels = [
         PageChooserPanel(
             "supporting_page",
-            page_type=["wagtailpages.BuyersGuideArticlePage", "wagtailpages.BuyersGuideCampaignPage"],
+            page_type=[
+                "wagtailpages.BuyersGuideArticlePage",
+                "wagtailpages.BuyersGuideCampaignPage",
+                "wagtailpages.ConsumerCreepometerPage",
+            ],
         )
     ]
 
@@ -539,4 +558,4 @@ def get_product_subset(cutoff_date, authenticated, key, products, language_code=
         products = products.live()
 
     products = sort_average(products)
-    return cache.get_or_set(key, products, 86400)
+    return cache.get_or_set(key, products, 24 * 60 * 60)  # Set cache for 24h

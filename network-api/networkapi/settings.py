@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import logging.config
 import os
 import sys
-from typing import Dict, Literal
+from typing import Dict, Literal, TypedDict
 
 import dj_database_url
 import environ
@@ -264,6 +264,7 @@ INSTALLED_APPS = list(
             "networkapi.wagtailpages",
             "networkapi.mozfest",
             "networkapi.donate",
+            "networkapi.donate_banner",
             "networkapi.reports",
             "pattern_library" if PATTERN_LIBRARY_ENABLED else None,
             "networkapi.project_styleguide",
@@ -414,7 +415,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
-DATABASES = {
+
+class DatabasesDict(TypedDict):
+    default: dj_database_url.DBConfig
+
+
+DATABASES: DatabasesDict = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
@@ -426,7 +432,7 @@ DATABASE_URL = env("DATABASE_URL")
 if DATABASE_URL is not None:
     DATABASES["default"].update(dj_database_url.config())
 
-DATABASES["default"]["ATOMIC_REQUESTS"] = True  # type: ignore
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 RANDOM_SEED = env("RANDOM_SEED")
 

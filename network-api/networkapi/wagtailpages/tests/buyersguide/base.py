@@ -4,7 +4,10 @@ from django.conf import settings
 from django.test.utils import override_settings
 
 from networkapi.wagtailpages.pagemodels.buyersguide.homepage import BuyersGuidePage
-from networkapi.wagtailpages.pagemodels.buyersguide.products import ProductPage
+from networkapi.wagtailpages.pagemodels.buyersguide.products import (
+    ProductPage,
+    ProductPageEvaluation,
+)
 from networkapi.wagtailpages.tests import base as test_base
 from networkapi.wagtailpages.utils import create_wagtail_image
 
@@ -27,7 +30,7 @@ class BuyersGuideTestCase(test_base.WagtailpagesTestCase):
         buyersguide = BuyersGuidePage.objects.first()
         if not buyersguide:
             # Create the buyersguide page.
-            buyersguide = BuyersGuidePage()
+            buyersguide = BuyersGuidePage(locale=cls.default_locale)
             buyersguide.title = "Privacy not included"
             buyersguide.slug = "privacynotincluded"
             cls.homepage.add_child(instance=buyersguide)
@@ -50,7 +53,11 @@ class BuyersGuideTestCase(test_base.WagtailpagesTestCase):
                 title="Product Page",
                 live=True,
                 image=wagtail_image,
+                locale=cls.default_locale,
             )
             cls.bg.add_child(instance=product_page)
             product_page.save_revision().publish()
+        # Reset votes:
+        product_page.evaluation = ProductPageEvaluation.objects.create()
+        product_page.save()
         return product_page

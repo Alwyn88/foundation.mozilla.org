@@ -143,7 +143,6 @@ class OpportunityPage(MiniSiteNameSpace):
 
     subpage_types = [
         "OpportunityPage",
-        "RedirectingPage",
         "PublicationPage",
         "ArticlePage",
     ]
@@ -185,19 +184,6 @@ class Petition(TranslatableMixin, CTA):
     show_comment_field = models.BooleanField(
         default=False,
         help_text="This toggles the visibility of the optional comment field.",
-    )
-
-    COMMENT_CHOICES = (
-        ("none", "No comments"),
-        ("optional", "Optional comments"),
-        ("required", "Required comments"),
-    )
-
-    comment_requirements = models.CharField(
-        choices=COMMENT_CHOICES,
-        default="none",
-        help_text="What is the comments policy for this petition?",
-        max_length=8,
     )
 
     checkbox_1 = models.CharField(
@@ -253,29 +239,11 @@ class Petition(TranslatableMixin, CTA):
         default="Thank you for signing too!",
     )
 
-    panels = [
-        # from CTA model
-        FieldPanel("name"),
-        FieldPanel("header"),
-        FieldPanel("description"),
-        FieldPanel("newsletter"),
-        # from this model
-        FieldPanel("campaign_id"),
-        FieldPanel("show_country_field"),
-        FieldPanel("show_postal_code_field"),
-        FieldPanel("show_comment_field"),
-        FieldPanel("share_twitter"),
-        FieldPanel("share_facebook"),
-        FieldPanel("share_email"),
-        FieldPanel("thank_you"),
-    ]
-
     translatable_fields = [
         # This models fields
         SynchronizedField("show_country_field"),
         SynchronizedField("show_postal_code_field"),
-        TranslatableField("show_comment_field"),
-        TranslatableField("comment_requirements"),
+        SynchronizedField("show_comment_field"),
         TranslatableField("checkbox_1"),
         TranslatableField("checkbox_2"),
         SynchronizedField("share_twitter"),
@@ -342,7 +310,6 @@ class CampaignPage(MiniSiteNameSpace):
 
     subpage_types = [
         "CampaignPage",
-        "RedirectingPage",
         "PublicationPage",
         "ArticlePage",
     ]
@@ -421,7 +388,6 @@ class BanneredCampaignPage(PrimaryPage):
 
     subpage_types = [
         "BanneredCampaignPage",
-        "RedirectingPage",
         "PublicationPage",
         "OpportunityPage",
         "ArticlePage",
